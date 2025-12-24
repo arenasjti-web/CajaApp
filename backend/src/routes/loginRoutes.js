@@ -1,4 +1,5 @@
 import express from "express"
+import { login } from "../controllers/loginControllers.js";
 
 const Router = express.Router()
 
@@ -6,6 +7,6 @@ const Router = express.Router()
 /*Deberia tener un login y quiza un register( quiza ni agregue esto) */
 
 
-//router.post("/",login)
+Router.post("/",login)
 
 export default Router;

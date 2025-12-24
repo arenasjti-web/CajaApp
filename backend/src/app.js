@@ -1,4 +1,5 @@
 import express from "express";
+// rutas
 import loginRoutes from "./routes/loginRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
@@ -19,4 +20,5 @@ app.get("/api/health", (req, res) => {
 });
 
 
+// configuro express 
 export default app;
