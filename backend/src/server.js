@@ -4,15 +4,26 @@ import "dotenv/config";// forma explicita
 //dotenv.config();ya no hace falta
 
 
-const PORT = process.env.PORT || 5001
+const NODE_ROLE = process.env.NODE_ROLE || "MASTER"
+const PORT = process.env.PORT || (NODE_ROLE ==="MASTER"?5001:3000)
 
-app.listen(PORT,()=>{
-    console.log("Server started in Port",PORT)
-})
 
-connectDB().then( ()=>{
-    app.listen(5001,()=>{
-        console.log("Server started n PORT:", PORT);
+if(NODE_ROLE === "Master"){
+    // Master Endpoint
+    connectDB().then( ()=>{
+    app.listen(PORT,()=>{
+        console.log("Server started en PORT:", PORT);
     })
 
 })
+}
+else{
+    // Cashier Endpoint
+     app.listen(PORT,()=>{
+        console.log("Server started en PORT:", PORT);
+    })
+}
+
+
+
+

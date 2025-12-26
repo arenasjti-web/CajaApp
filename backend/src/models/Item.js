@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const productSchema = new mongoose.Schema(
+const itemSchema = new mongoose.Schema(
   {
     sku: {
       type: String,
@@ -40,4 +40,4 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("Product", productSchema);
+export default mongoose.model("Item", itemSchema);
