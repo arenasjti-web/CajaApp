@@ -46,7 +46,7 @@
 
         try {
 
-            const validatedBody = validateItemCreation(req.body)
+            const validatedBody = validateItem(req.body)
             if(!validatedBody) return res.status(400).json({ message: "Invalid body" })
             const newItem = await Item.create(validatedBody) // opcion de mongoose
             //const newItem = await Item.insertOne(req.body);// driver nativo
@@ -58,7 +58,7 @@
         }
     }
 
-    function validateItemCreation({sku,name,price,stock}){
+    function validateItem({sku,name,price,stock}){
         const validatedBody = {
             sku,
             name,
@@ -80,10 +80,33 @@
     }
     
     export const addManyToInventory = async(req,res)=>{
-        // leer desde CSV?
+        // from CSV?. make it later as an extra feature
     }
 
-    export const updateProduct = async(req,res)=>{
+    export const updateItem = async(req,res)=>{
+
+        const {itemId} = req.params
+        try {
+            const validatedItem = validateItem(req.body)
+            if(!validatedItem) return res.status(400).json({ message: "Invalid body" })
+
+            const updatedItem =await Item.findByIdAndUpdate({itemId},validatedBody,{
+                new:true,
+                runValidators:true
+            })
+
+            if(!updatedItem){
+                return res.status(404).json({message:"Item not found"})
+            }
+
+            res.status(200).json(updatedItem)
+
+
+
+        } catch (error) {
+             console.error("Error updateing Item ",error)
+            res.status(500).json({message:"Internal server error"})
+        }
 
     }
 
