@@ -1,15 +1,37 @@
 import { useState } from 'react'
-import toast, { Toaster } from 'react-hot-toast';
-
+import {NavBar} from "./components/navbar/NavBar.jsx"
+import { Route, Routes } from 'react-router';
+import { HomePage } from './pages/HomePage.jsx';
+import { Inventory } from './pages/Inventory.jsx';
+import { AuthPage } from './pages/AuthPage.jsx';
+import PublicRoute from './components/auth/PublicRoute.jsx';
+import { isAuthenticated } from './lib/auth.js';
+import { Navigate } from "react-router-dom"
 
 function App() {
 
   const notify = () => toast('Here is your toast.');
   return (
     <>
-      <button className="btn bg-accent" onClick={notify}>Make me a toast</button>
-      <Toaster position="top-center" />
-      <div>App</div>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            isAuthenticated()
+              ? <Navigate to="/home" replace />
+              : <Navigate to="/login" replace />
+          }// dirigido a home o login segun si hay token o no
+        />
+        <Route path='/Home' element={<HomePage></HomePage>}></Route>
+        <Route path='/auth' element={
+          <PublicRoute>
+            <AuthPage></AuthPage>
+          </PublicRoute>
+        } //Evito que se pueda volver a login si ya existe el token 
+        ></Route>
+        <Route path='/inventory' element={<Inventory></Inventory>}></Route>
+      </Routes>
+     
    </>
   )
 }
