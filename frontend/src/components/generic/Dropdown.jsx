@@ -1,8 +1,12 @@
 import React from 'react'
 
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 
 export const Dropdown = ({ sku, onDelete }) => {
+
+    
+
+
   return (
     <div className="dropdown dropdown-left">
       <div
@@ -18,7 +22,7 @@ export const Dropdown = ({ sku, onDelete }) => {
         className="dropdown-content menu bg-base-100 rounded-box w-40 p-2 shadow text-xs"
       >
         <li>
-          <Link to={`/inventory/${sku}/edit`}>
+          <Link to={`/item/${sku}`}>
             Editar
           </Link>
         </li>

@@ -30,12 +30,31 @@ const itemSchema = new mongoose.Schema(
     }, 
     brand:{
       type: String, 
+      ref:"Brand",
       trim: true
     },
     provider:{
       type: String, 
+      ref:"Provider",
       trim: true
-    }
+    },
+    unit:{
+      type:String,
+      trim:true
+    },
+    ppu:{// Precio Por Unidad ( de medida )
+      type: Number,
+      min: 0
+    },
+    packItem: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Item",
+      default: null
+    },
+    // packPrice:{
+    //   type: Number,
+    //   min: 0
+    // }
   },
   { timestamps: true }
 );

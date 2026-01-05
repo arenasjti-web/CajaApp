@@ -7,6 +7,7 @@ import { AuthPage } from './pages/AuthPage.jsx';
 import PublicRoute from './components/auth/PublicRoute.jsx';
 import { isAuthenticated } from './lib/auth.js';
 import { Navigate } from "react-router-dom"
+import { ItemPage } from './pages/ItemPage.jsx';
 
 function App() {
 
@@ -19,7 +20,7 @@ function App() {
           element={
             isAuthenticated()
               ? <Navigate to="/home" replace />
-              : <Navigate to="/login" replace />
+              : <Navigate to="/auth" replace />
           }// dirigido a home o login segun si hay token o no
         />
         <Route path='/Home' element={<HomePage></HomePage>}></Route>
@@ -30,6 +31,8 @@ function App() {
         } //Evito que se pueda volver a login si ya existe el token 
         ></Route>
         <Route path='/inventory' element={<Inventory></Inventory>}></Route>
+        <Route path='/item/' element={<ItemPage></ItemPage>}></Route>
+        <Route path='/item/:sku' element={<ItemPage></ItemPage>}></Route>
       </Routes>
      
    </>
