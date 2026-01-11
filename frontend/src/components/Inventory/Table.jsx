@@ -15,7 +15,10 @@ export const Table = ({filters}) => {
 
         const fetchData = async ()=>{
             try {
-                const res = await api.get("/inventory", {
+                const params = new URLSearchParams({
+                    filters: JSON.stringify(filters)
+                })
+                const res = await api.get(`/inventory?${params}`, {
                     signal: controller.signal
                 })
                 setData(res.data)

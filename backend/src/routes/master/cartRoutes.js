@@ -1,15 +1,20 @@
 import express from "express"
-import { createSale, getItemDetails, processSale, saveSale } from "../../controllers/cartController.js";
+import { addItemToCart, deleteCartRow, getItemDetails, getOrCreateCart, processSale, saveSale, updateItemQuantity } from "../../controllers/cartController.js";
 
 const Router = express.Router()
 
-Router.post("/",createSale)
+Router.post("/",getOrCreateCart)
+
+Router.post("/sales/:saleId/items/:sku",addItemToCart)
 
 Router.get("/",getItemDetails)
 
 Router.put("/:id",saveSale)
 
+Router.put("/sales/:saleId/items/:itemId",updateItemQuantity)
 
-Router.post("/:id",processSale)
+Router.delete("/sales/:saleId/items/itemId",deleteCartRow)
+
+Router.post("/sales/:id",processSale)
 
 export default Router;

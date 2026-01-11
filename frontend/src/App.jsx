@@ -8,6 +8,7 @@ import PublicRoute from './components/auth/PublicRoute.jsx';
 import { isAuthenticated } from './lib/auth.js';
 import { Navigate } from "react-router-dom"
 import { ItemPage } from './pages/ItemPage.jsx';
+import { Cart } from './pages/Cart.jsx';
 
 function App() {
 
@@ -30,6 +31,7 @@ function App() {
           </PublicRoute>
         } //Evito que se pueda volver a login si ya existe el token 
         ></Route>
+        <Route path='/cart' element={<Cart></Cart>}></Route>
         <Route path='/inventory' element={<Inventory></Inventory>}></Route>
         <Route path='/item/' element={<ItemPage></ItemPage>}></Route>
         <Route path='/item/:sku' element={<ItemPage></ItemPage>}></Route>

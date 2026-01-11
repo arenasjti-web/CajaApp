@@ -12,7 +12,11 @@ export const Inventory = () => {
 
     const [filters,setFilters] = React.useState({
             search: "",
-            category: "",
+            provider: "",
+            brand:"",
+            price:1,
+            date:1,
+            stock:"En Stock"
     })
 
     const [stats,setStats] = React.useState({
@@ -50,7 +54,7 @@ export const Inventory = () => {
                     <Stat statData={stats.thirdStat}></Stat>
                 </div>
             </div>
-            <div className='flex flex-col w-7/8 mx-auto mt-8 bg-base-100 rounded-2xl'>
+            <div className="flex flex-col max-w-10/12 w-full mx-auto mt-8 bg-base-100 rounded-2xl overflow-x-hidden">
                 <Filter initialFilters={filters} onApply={setFilters}></Filter>
                 <Table filters={filters}></Table>
 

@@ -1,7 +1,7 @@
 import React from 'react'
 import api from '../../lib/axios';
 
-export const SelectProviders = () => {
+export const SelectProviders = (props) => {
 
     const [providers,setProviders] = React.useState([]);
     React.useEffect(  ()=>{
@@ -19,10 +19,18 @@ export const SelectProviders = () => {
       fetchProviders()
     },[])
 
+
+    const handleSelectChange =(e)=>{
+
+      if(props?.setDraft != undefined){
+        props.setDraft( d =>({...d,provider:e.target.value}))
+      }
+    }
+
 return (
-    <select className='select mx-auto'>
+    <select className='select  ' onChange={handleSelectChange} value={props.value ?? ""}>
         {/** Map providers */}
-        <option value="">-- Seleccione una Opción</option>
+        <option value="">-- Seleccione un Proveedor --</option>
         { providers.map( (provider) =>(
 
              <option key={provider.name} value={provider.name}>{provider.name}</option>

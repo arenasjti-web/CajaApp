@@ -6,8 +6,12 @@
     export const getInventory = async (req,res)=>{
         
         try{
-            const filter = inventoryFilter(req.query)
-            const items = await Item.find(filter);
+             const filters = req.query.filters
+            ? JSON.parse(req.query.filters)
+            : {}
+
+            const {filter,sort} = inventoryFilter(filters)
+            const items = await Item.find(filter).sort(sort);
 
             res.status(200).json(items)
         }
@@ -47,30 +51,71 @@
     }
 
 
-    function inventoryFilter({ category, minPrice, maxPrice, inStock, active }){
+    function inventoryFilter({ search, provider, brand, price,date, stock, }){
 
         const filter = {}
-
-        if (category) {
-        filter.category = category
+        const sort = {}
+        if (search !== "") {
+            if (/^\d+$/.test(search)) {
+                // solo números → SKU
+                filter.sku = search
+            } else {
+                // texto → LIKE en name
+                filter.name = { $regex: search, $options: "i" }
+            }
         }
 
-        if (active !== undefined) {
-        filter.active = active === "true"
+        if (provider !== "") {
+            // 
+            filter.provider = provider
         }
 
-        if (inStock === "true") {
-        filter.stock = { $gt: 0 }
+        if (brand !== "") {
+            filter.brand = brand
         }
 
-        if (minPrice || maxPrice) {
-        filter.price = {}
+        
 
-        if (minPrice) filter.price.$gte = Number(minPrice)
-        if (maxPrice) filter.price.$lte = Number(maxPrice)
+        if (price === 1 || price === -1) {
+            sort.price = price
         }
 
-        return filter;
+        if (date === 1 || date === -1) {
+            sort.createdAt = date
+        }
+
+        if (stock) {
+            
+            switch (stock) {
+                case "En Stock":
+                    console.log("1")
+                    filter.stock = { $gt: 0 }
+                break
+
+               case "Bajo en Stock":
+              
+                    filter.$expr = {
+                        $and: [
+                        { $gt: ["$stock", 0] },
+                        { $lte: ["$stock", "$lowStockThreshold"] }
+                        ]
+                    }
+                break
+
+                case "Sin Stock":
+                  
+                    filter.stock = 0
+                break
+
+                default:
+                  
+                    filter.stock = { $gt: 0 }
+                    break;
+            }
+        }
+
+
+        return {filter,sort};
     }
 
     export const addOneToInventory = async(req,res)=>{
