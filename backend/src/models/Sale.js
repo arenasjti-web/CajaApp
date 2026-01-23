@@ -7,6 +7,12 @@ const saleItemSchema = new mongoose.Schema(
       ref: "Item",
       required: true
     },
+    sku: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true
+    },
     nameSnapshot: {
       type: String,
       required: true
@@ -40,6 +46,10 @@ const saleSchema = new mongoose.Schema(
     items: {
       type: [saleItemSchema],
       default: []
+    },
+    totalAmount:{
+      type:Number,
+      min:0
     }
   },
   { timestamps: true }

@@ -64,8 +64,8 @@ export const Filter = ({initialFilters,onApply}) => {
         <div className="flex gap-2">
             <input type="text" name = "search" placeholder="Buscar..." className="input input-md " value={draft.search}
               onChange={ e => setDraft({...draft,search: e.target.value})} />
-           <SelectProviders setDraft={setDraft} value={draft.provider}></SelectProviders>
-           <SelectBrands setDraft={setDraft} value={draft.brand}></SelectBrands>
+           <SelectProviders setValue={setDraft} value={draft.provider}></SelectProviders>
+           <SelectBrands setValue={setDraft} value={draft.brand}></SelectBrands>
         </div>
 
         {/* Precio */}

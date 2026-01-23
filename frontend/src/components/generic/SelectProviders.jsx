@@ -21,19 +21,16 @@ export const SelectProviders = (props) => {
 
 
     const handleSelectChange =(e)=>{
-
-      if(props?.setDraft != undefined){
-        props.setDraft( d =>({...d,provider:e.target.value}))
-      }
+      props?.setValue((prev)=>({...prev,provider:e.target.value}))
     }
 
 return (
-    <select className='select  ' onChange={handleSelectChange} value={props.value ?? ""}>
+    <select name="provider" className='select w-full' value={props?.defaultValue} onChange={handleSelectChange}>
         {/** Map providers */}
         <option value="">-- Seleccione un Proveedor --</option>
         { providers.map( (provider) =>(
 
-             <option key={provider.name} value={provider.name}>{provider.name}</option>
+             <option key={provider._id} value={provider._id}>{provider.name}</option>
           )
           )
           

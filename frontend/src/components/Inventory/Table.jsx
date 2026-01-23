@@ -5,10 +5,19 @@ import toast from 'react-hot-toast';
 import { DeleteConfirmModal } from '../generic/DeleteConfirmModal'
 export const Table = ({filters}) => {
 
-    const [data,setData] = React.useState([{sku:"3123",name:"",price:"",stock:""},{sku:"3122",name:"",price:"",stock:""}])
+    const [data,setData] = React.useState([])
     const [isRateLimited,setIsRateLimited] =React.useState(false);
     const [loading,setLoading] = React.useState(false);
-     const [deleteSku, setDeleteSku] = React.useState(null)
+    const [deleteSku, setDeleteSku] = React.useState(null)
+
+    const [totalPages,setTotalPages] = React.useState(2)
+    const [total,setTotal] = React.useState(0)
+    const [page,setPage] = React.useState(1)
+    const [limit,setLimit] = React.useState(20)
+
+    const [pagination,setPagination] = React.useState(null)
+
+
 
     React.useEffect(  ()=>{
         const controller = new AbortController()
@@ -16,12 +25,17 @@ export const Table = ({filters}) => {
         const fetchData = async ()=>{
             try {
                 const params = new URLSearchParams({
-                    filters: JSON.stringify(filters)
-                })
-                const res = await api.get(`/inventory?${params}`, {
+                    filters: JSON.stringify(filters),
+                    pagination: JSON.stringify({
+                        page,
+                        limit    
+                    })
+                })  
+                const {data} = await api.get(`/inventory?${params}`, {
                     signal: controller.signal
                 })
-                setData(res.data)
+                setData(data.data)
+                setPagination(data.pagination)
                 setIsRateLimited(false)
             } catch (error) {
                 
@@ -48,7 +62,7 @@ export const Table = ({filters}) => {
         setLoading(true)
         fetchData()
         return () => controller.abort() // que solo la ultima request valida pueda cambiar el estado. sin esto , en caso de 2 o mas request; una request mas lenta y mas vieja podria acabar mostrandose
-    },[filters])
+    },[filters,page,limit])
 
 
      const handleDeleteClick = (sku) => {
@@ -90,7 +104,7 @@ export const Table = ({filters}) => {
                 <th>Nombre</th>
                 <th>Precio</th>
                 <th>Stock</th>
-                <th className="w-auto text-center">...</th>
+                <th className="w-auto text-center">action</th>
             </tr>   
             </thead>
             <tbody className='zebra-inverted'>
@@ -101,6 +115,62 @@ export const Table = ({filters}) => {
             )}
             </tbody>
         </table>
+            {(pagination && filters)&& (
+                <div className="flex items-center justify-between px-6 py-3 border-t border-base-300 text-sm">
+
+                    {/* info */}
+                    <span className="text-base-content/60">
+                        Mostrando {(pagination.page - 1) * pagination.limit + 1}
+                        –
+                        {Math.min(
+                            pagination.page * pagination.limit,
+                            pagination.total
+                        )}
+                        {" "}de {pagination.total}
+                    </span>
+
+                    {/* controles */}
+                    <div className="join">
+
+                        <button
+                            className="join-item btn btn-sm"
+                            disabled={pagination.page === 1}
+                            onClick={() =>
+                                setPage(pagination.page - 1)
+                            }
+                        >
+                            «
+                        </button>
+
+                        {Array.from({ length: pagination.totalPages }).map((_, i) => (
+                            <button
+                                key={i}
+                                className={`join-item btn btn-sm ${
+                                    pagination.page === i + 1
+                                        ? "btn-active"
+                                        : ""
+                                }`}
+                                onClick={() =>
+                                    setPage(i + 1)
+                                }
+                            >
+                                {i + 1}
+                            </button>
+                        ))}
+
+                        <button
+                            className="join-item btn btn-sm"
+                            disabled={pagination.page === pagination.totalPages}
+                            onClick={() =>
+                                setPage(pagination.page + 1)
+                            }
+                        >
+                            »
+                        </button>
+
+                    </div>
+                </div>
+            )}
         <DeleteConfirmModal 
             open={!!deleteSku}
             sku={deleteSku}

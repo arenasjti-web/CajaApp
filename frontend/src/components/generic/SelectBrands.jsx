@@ -19,23 +19,25 @@ export const SelectBrands = (props) => {
     },[])
 
     const handleSelectChange =(e)=>{
-
-      if(props?.setDraft != undefined){
-        props.setDraft( d =>({...d,brand:e.target.value}))
-      }
+      props?.setValue((prev)=>({...prev,brand:e.target.value}))
     }
   return (
-    <select className='select' onChange={handleSelectChange} value={props.value ?? ""}>
-        {/** Map providers */}
-        <option value="">-- Seleccione una Marca</option>
-        { brands.map( (brand) =>(
+   <select
+    name="brand"
+    className="select select-bordered w-full"
+    value={props?.defaultValue}
+    onChange={handleSelectChange}
+>
+    <option value="">
+        --Seleccione una Marca--
+    </option>
 
-             <option key={brand.name} value={brand.name}>{brand.name}</option>
-          )
-          )
-          
-        }
-       
-    </select>
+    {brands.map(brand => (
+        <option key={brand._id} value={brand._id}>
+            {brand.name}
+        </option>
+    ))}
+</select>
+
   )
-}
+} 

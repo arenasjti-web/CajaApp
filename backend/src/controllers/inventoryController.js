@@ -1,19 +1,40 @@
    import Item from "../models/Item.js";
    import Brand from "../models/Brand.js"
    import Provider from "../models/Provider.js"
-
+   import mongoose from "mongoose";
 
     export const getInventory = async (req,res)=>{
         
         try{
-             const filters = req.query.filters
-            ? JSON.parse(req.query.filters)
-            : {}
+            // esta mierda no deberiahaber sido necesaria pero me tiraba errores cada vez que no traia query la wea esta
+            const {filters,pagination} = req.query
+            if (filters) {
+                const pagination = JSON.parse(req.query.pagination);
+                const currentPage = Math.max(Number(pagination.page) || 1, 1)
+                const currentLimit = Math.min(Number(pagination.limit) || 20, 100)
+                const skip = (currentPage - 1) * currentLimit
 
-            const {filter,sort} = inventoryFilter(filters)
-            const items = await Item.find(filter).sort(sort);
-
-            res.status(200).json(items)
+                //Filtros
+                const filters = JSON.parse(req.query.filters);
+               //const pagination = JSON.parse(pagination);
+                const { filter, sort } = inventoryFilter(filters);
+                const items = await Item.find(filter).sort(sort).skip(skip).limit(currentLimit);
+                const total = await Item.countDocuments(filter)
+                res.status(200).json({
+                 data:items,
+                 pagination:{   
+                    page:currentPage,
+                    limit:currentLimit,
+                    total,
+                    totalPages: Math.ceil(total / currentLimit)
+                 }   
+                });
+            } else {
+                // Si no vienen filtros, solo devuelves todo
+                console.log(" no vien aqui o si ? ")
+                const items = await Item.find();
+                res.status(200).json(items);
+            }
         }
         catch(error){
             console.error("Error in getInventory ",error)
@@ -67,7 +88,8 @@
 
         if (provider !== "") {
             // 
-            filter.provider = provider
+            
+            filter.provider = new mongoose.Types.ObjectId(provider);
         }
 
         if (brand !== "") {
@@ -96,7 +118,7 @@
               
                     filter.$expr = {
                         $and: [
-                        { $gt: ["$stock", 0] },
+                        { $gte: ["$stock", 0] },
                         { $lte: ["$stock", "$lowStockThreshold"] }
                         ]
                     }

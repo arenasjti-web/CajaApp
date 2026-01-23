@@ -9,12 +9,23 @@ import { isAuthenticated } from './lib/auth.js';
 import { Navigate } from "react-router-dom"
 import { ItemPage } from './pages/ItemPage.jsx';
 import { Cart } from './pages/Cart.jsx';
+import { SaleDetail } from './pages/SaleDetail.jsx';
+
+import { ScannerProvider } from "./scanner/ScannerContext"
+import { useScannerListener } from "./scanner/useScannerListener"
+import { SaleHistory } from './pages/SaleHistory.jsx';
+
 
 function App() {
-
-  const notify = () => toast('Here is your toast.');
+  
+  function ScannerListenerMount() {
+    useScannerListener()
+    return null
+  }
+  
   return (
-    <>
+    <ScannerProvider>
+      <ScannerListenerMount />
       <Routes>
         <Route
           path="/"
@@ -35,9 +46,11 @@ function App() {
         <Route path='/inventory' element={<Inventory></Inventory>}></Route>
         <Route path='/item/' element={<ItemPage></ItemPage>}></Route>
         <Route path='/item/:sku' element={<ItemPage></ItemPage>}></Route>
+        <Route path='/sales/' element={<SaleHistory/>}></Route>
+        <Route path='/sales/:saleId' element={<SaleDetail/>}></Route>
       </Routes>
      
-   </>
+    </ScannerProvider>
   )
 }
 

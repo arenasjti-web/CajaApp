@@ -1,26 +1,20 @@
 import React from 'react'
-import { Trash2 } from 'lucide-react'
+import { Trash2 ,Copy} from 'lucide-react'
 import api from '../../lib/axios'
 
-export const CartItem = ({data,saleId,onDelete}) => {
+export const CartItem = ({data,saleId,onDelete,onQuantityChange}) => {
 
-    const [quantity,setQuantity] = React.useState(data.quantity)
+    //const [quantity,setQuantity] = React.useState(data.quantity)
     const[priceToggle,setPriceToggle] = React.useState("$$")
 
-    const handleQuantity = async (n)=>{
-        var rollback = quantity// nunca hacer esto dentro del setState
-        var next;
-        setQuantity(prev=>{
-            next = (prev+n)
-            return next
-        })
-
-        if(rollback== 0 && n == -1) return; // evito hacer request
+    const handleQuantity = async (delta)=>{
+       
         try {
             // algo que cambia en BD la cantidad
-            const res = api.put(`/cart/sales/${saleId}/items/${data.itemId}`,{delta:n})
+            const res = api.put(`/cart/sales/${saleId}/items/${data.itemId}`,{delta:delta})
+            onQuantityChange(data.sku,delta)
         } catch (error) {
-            setQuantity(rollback)
+            console.log("error cambiado cantidad de item",error)
         }
     }
 
@@ -36,72 +30,90 @@ export const CartItem = ({data,saleId,onDelete}) => {
         px-4
         py-3
         hover:bg-base-200/40
-        transition"
+        transition
+        gap-0.5
+        
+        "
     >
         {/**Secciones */}
         {/**Info Text */}
-        <div className="flex flex-col gap-0.5 ml-20">
-            <span className="text-xs text-base-content/50">
-                SKU {data.sku}
-            </span>
+        <div className="flex flex-col gap-0.5 ml-1 md:ml-20">
+           <div className="flex items-center gap-2 max-w-30">
+                <span className="text-xs text-base-content/50 truncate">
+                    {`SKU ${data?.sku}`}
+                </span>
+
+                <button
+                    type="button"
+                    className="btn btn-ghost btn-xs p-1"
+                    onClick={() => navigator.clipboard.writeText(data.sku)}
+                    aria-label="Copiar SKU"
+                >
+                    <Copy size={14} />
+                </button>
+            </div>
 
             <span className="font-semibold leading-tight">
                 {data.nameSnapshot}
             </span>
 
             <span className="text-xs text-base-content/60">
-                Marca
+                {data.brand ?? "--"}
             </span>
         </div>
 
         {/** Precio a usar */}
-        <div className="flex items-center space-x-2">
-  {/* Opción Precio por Unidad */}
-  <label className="tooltip cursor-pointer" data-tip="Precio por Unidad">
-    <input
-      type="radio"
-      name="options"
-      value="$$"
-      aria-label="$$"
-      onChange={(e) => setPriceToggle(e.target.value)}
-      defaultChecked
-      className="hidden"
-    />
-    <div
-      className={`px-3 py-1 rounded-full border border-gray-300 text-sm font-medium text-center shadow-sm
-                  transition-colors duration-200
-                  ${priceToggle === '$$' ? 'bg-green-600 text-white' : 'bg-white text-gray-800'}
-                  hover:bg-green-50`}
-    >
-      $$
-    </div>
-  </label>
+        <div className="
+            flex flex-col
+            items-center
+            space-y-2
+            md:flex-row
+            md:space-y-0
+            md:space-x-2
+        ">
 
-  {/* Opción Precio por Medida */}
-  <label className="tooltip cursor-pointer" data-tip="Precio por Medida">
-    <input
-      type="radio"
-      name="options"
-      value="kg"
-      aria-label="kg"
-      onChange={(e) => setPriceToggle(e.target.value)}
-      disabled={data?.ppu}
-      className="hidden"
-    />
-    <div
-      className={`px-3 py-1 rounded-full border border-gray-300 text-sm font-medium text-center shadow-sm
-                  transition-colors duration-200
-                  ${priceToggle === 'kg' ? 'bg-green-600 text-white' : 'bg-white text-gray-800'}
-                  hover:bg-green-50
-                  ${data?.ppu ? 'opacity-50 cursor-not-allowed' : ''}`}
-    >
-      kg
-    </div>
-  </label>
-</div>
+            {/* Opción Precio por Unidad */}
+            <label className="tooltip cursor-pointer" data-tip="Precio por Unidad">
+                <input
+                    type="radio"
+                    name="options"
+                    value="$$"
+                    aria-label="$$"
+                    onChange={(e) => setPriceToggle(e.target.value)}
+                    defaultChecked
+                    className="hidden"
+                />
+                <div  className={`px-3 py-1 rounded-full border border-gray-300 text-sm font-medium text-center shadow-sm
+                                transition-colors duration-200
+                                ${priceToggle === '$$' ? 'bg-green-700/80 text-white' : 'bg-white text-gray-800'}
+                                hover:bg-green-50`}
+                >
+                    $$
+                </div>
+            </label>
 
-
-
+            {/* Opción Precio por Medida */}
+            <label className="tooltip cursor-pointer" data-tip="Precio por Medida">
+                <input
+                type="radio"
+                name="options"
+                value="kg"
+                aria-label="kg"
+                onChange={(e) => setPriceToggle(e.target.value)}
+                disabled={data?.ppu}
+                className="hidden"
+                />
+                <div
+                className={`px-3 py-1 rounded-full border border-gray-300 text-sm font-medium text-center shadow-sm
+                            transition-colors duration-200
+                            ${priceToggle === 'kg' ? 'bg-green-600 text-white' : 'bg-white text-gray-800'}
+                            hover:bg-green-50
+                            ${data?.ppu ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                kg
+                </div>
+            </label>
+        </div>
 
         {/**Cantidad */}
        <div className='flex flex-col items-center'>
@@ -114,7 +126,7 @@ export const CartItem = ({data,saleId,onDelete}) => {
                 </button>
 
                 <span className="min-w-[1.5rem] text-center text-sm font-semibold">
-                    {quantity}
+                    {data.quantity}
                 </span>
 
                 <button
@@ -125,16 +137,27 @@ export const CartItem = ({data,saleId,onDelete}) => {
                 </button>
             </div>
             <div className='text-center'>
-                <label className='flex justify-center items-center gap-1 btn btn-ghost' onClick={deleteRow}>
+               <button
+                    type="button"
+                    className="flex justify-center items-center gap-1 btn btn-ghost"
+                    onClick={deleteRow}
+                    >
                     Eliminar
-                    <Trash2 size={15} color='red'/>
-                </label>
+                    <Trash2 size={15} color="red" />
+                </button>
             </div>
        </div>
         {/**precio */}
-        <div className="justify-self-center font-semibold tabular-nums">
-            <span>$123123213</span>
+        <div className="
+            justify-self-end
+            font-semibold
+            tabular-nums
+            text-sm
+            md:text-base
+            ">
+            {data.priceAtSale}
         </div>
+
 
     </div>
   )

@@ -7,14 +7,15 @@ Router.post("/",getOrCreateCart)
 
 Router.post("/sales/:saleId/items/:sku",addItemToCart)
 
+Router.put("/sales/:saleId",processSale)
+
 Router.get("/",getItemDetails)
 
 Router.put("/:id",saveSale)
 
 Router.put("/sales/:saleId/items/:itemId",updateItemQuantity)
 
-Router.delete("/sales/:saleId/items/itemId",deleteCartRow)
+Router.delete("/sales/:saleId/items/:itemId",deleteCartRow)
 
-Router.post("/sales/:id",processSale)
 
 export default Router;

@@ -57,6 +57,7 @@ export const Inventory = () => {
             <div className="flex flex-col max-w-10/12 w-full mx-auto mt-8 bg-base-100 rounded-2xl overflow-x-hidden">
                 <Filter initialFilters={filters} onApply={setFilters}></Filter>
                 <Table filters={filters}></Table>
+                
 
             </div>
         </main>

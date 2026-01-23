@@ -10,10 +10,6 @@ export const ItemPage = () => {
     const { sku } = useParams()
     const [activeTab, setActiveTab] = React.useState(0)
 
-   
-
-    
-
   return (
     <div className='flex flex-1 h-screen bg-base-200'>
         <NavBar></NavBar>

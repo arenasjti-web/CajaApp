@@ -10,7 +10,7 @@ export const NavItem = ({Icon,to}) => {
                     is-drawer-close:justify-center
                     is-drawer-open:justify-start
                     ">
-        <div className="p-3 rounded-lg hover:bg-base-300 transition-colors">
+        <div className="p-3 rounded-lg hover:bg-primary/80 transition-colors">
             <Icon className="size-8 shrink-0 mx-2" ></Icon>
         </div>
         <span className="is-drawer-close:hidden

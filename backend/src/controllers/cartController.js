@@ -54,22 +54,23 @@ export const addItemToCart = async(req,res)=>{
                 return res.status(200).json({ message: "Item en Carro Actualizado" })
             }
             else{
-                // agrego a items[], no sé como
+                // 
+                const newItem = {
+                    itemId: item._id,
+                    sku:sku,
+                    nameSnapshot: item.name,
+                    priceAtSale: item.price,
+                    quantity: 1
+                }
                 await Sale.findByIdAndUpdate(
                     saleId,
                     {
                         $push: {
-                            items: {
-                                itemId: item._id,
-                                sku:item.sku,
-                                nameSnapshot: item.name,
-                                priceAtSale: item.price,
-                                quantity: 1
-                            }
+                            items: newItem
                         }
                     }
                 )
-                return res.status(201).json({ message: "Item Agregado" })
+                return res.status(201).json(newItem)
             }
         }
         else{
@@ -114,15 +115,21 @@ async function updatedQuantityHelper(saleId,itemId,delta){
             )
         }
 }
-export const deleteCartRow = async()=>{
+
+export const deleteCartRow = async(req,res)=>{
     const {saleId,itemId} = req.params;
     
     try{
-        const updatedItem = await Sale.updateOne(
+        const updatedCart= await Sale.updateOne(
             { _id: saleId },
             { $pull: { items: { itemId } } }
         )
-        res.status(200).json(result)
+        res.status(200).json(updatedCart)// devuelve algo como esto:
+            // {acknowledged: true,
+            // matchedCount: 1,
+            // modifiedCount: 1
+            // }
+
     }catch(error){
         console.error("Error updating quantity",error)
         res.status(500).json({message:"Internal server error"})
@@ -147,8 +154,6 @@ export async function getItemDetails(req,res){
         res.status(500).json({message:"Internal server error"})
     }
 }
-
-
 
 export const saveSale = async (req, res)=>{
     // put the sale on pause. call this everytime a relevant change to the current sale occurs
@@ -182,17 +187,30 @@ export const saveSale = async (req, res)=>{
 export const processSale = async (req, res)=>{
     // call this if the state is " cancelled" or "paid". i should deleted from the local variables/ states in the front end as soon as i received the 200 state
    try{
-        const items = req.body.items;
-        const formatedItems = await formatItems(items)
-        const saleDetail = {
-            status: items.status,
-            createdBy: "default",//luego lo cambio,
-            items: formatedItems
-    }
+        const {saleId} = req.params
+        const {status,total} = req.body
 
-    const newSale = await Sale.create(saleDetail)
+        const allowedStatus = ["completed", "cancelled", "paid"]
+
+        if (!allowedStatus.includes(status)) {
+            return res.status(400).json({
+                message: "Invalid sale status"
+            })
+        }
+
+        const sale = await Sale.findByIdAndUpdate(
+            saleId,
+            { status,totalAmount:total },
+            { new: true }
+        )
+
+        if (!sale) {
+            return res.status(404).json({
+                message: "Sale not found"
+            })
+        }
     
-    res.status(200).json(newSale)
+        res.status(200).json({message:"Venta Procesada"})
 
    }catch(error){
         console.error("Error Processing Sale",error)

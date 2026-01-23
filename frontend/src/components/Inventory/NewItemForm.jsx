@@ -8,8 +8,9 @@ import api from '../../lib/axios'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router'
 import { Check, X } from "lucide-react"
+import { SelectCategories } from '../generic/SelectCategories'
 
-export const NewItemForm = ({sku}) => {
+export const NewItemForm = ({sku,onModal}) => {
     
     const [form, setForm] = React.useState(null)
     const navigate = useNavigate()
@@ -27,7 +28,12 @@ export const NewItemForm = ({sku}) => {
 
 
     React.useEffect(() => {
+        
         if (!sku) return
+        if(onModal){
+            setForm({sku})
+            return
+        }
 
         const fetchItem = async () => {
             try {
@@ -62,6 +68,15 @@ export const NewItemForm = ({sku}) => {
         
         try {
             const formatedData = formatData(data)
+
+            if(onModal){ 
+                const newItem = await api.post("/inventory",formatedData)
+                toast.success("Item created successfully!")
+                console.log("data: ",newItem)
+                onModal(newItem)
+                return
+            }
+
             if(sku){
                 const updatedItem = await api.put(`/inventory/${sku}`,formatedData)
                 toast.success("Item updated successfully!")
@@ -130,7 +145,15 @@ export const NewItemForm = ({sku}) => {
                     </button>
                 )}
             </div>
-            <input type='text' name="name" placeholder='Nombre de Producto' className="input input-bordered w-full" required defaultValue={form?.name || ""}></input>
+           <div className="join w-full">
+                <input
+                    name='name'
+                    className="input input-bordered join-item flex-3"
+                    placeholder="Nombre del producto"
+                />
+
+                <SelectCategories/>
+            </div>
             
             <div className='flex flex-1 gap-1'>
                 <input type='number' name="stock"placeholder='Stock' className="input input-bordered appearance-none" required defaultValue={form?.stock || ""}></input>
@@ -142,37 +165,55 @@ export const NewItemForm = ({sku}) => {
                 </input>
                 <input type='number' name="lowStockThreshold"placeholder='¿cuantas son pocas unidades?' defaultValue={form?.lowStockThreshold || ""} className="input input-bordered appearance-none" required></input>
             </div>
-            <div className='flex flex-col flex-1  items-stretch justify-center md:flex-row '>
-                <label className="flex flex-col flex-1 text-center">
-                    Marca
-                    <SelectBrands name="brand" defaultValue={form?.brand || ""}></SelectBrands>
+            <div className='flex flex-col flex-1 gap-1 items-stretch justify-center md:flex-row join'>
+                <label className=" label flex flex-col flex-1 text-center">
+                    <span className="label-text">Marca</span>
+                    <SelectBrands  defaultValue={form?.brand || ""} setValue={setForm}></SelectBrands>
                 </label>
-                <label className="flex flex-col flex-1 text-center">
-                    Proveedor
-                    <SelectProviders name="provider" defaultValue={form?.provider || ""}></SelectProviders>
+               <label className=" label flex flex-col flex-1 text-center">
+                    <span className="label-text">Proveedor</span>
+                    <SelectProviders defaultValue={form?.provider || ""} setValue={setForm}></SelectProviders>
                 </label>
                 {(needsUnits || pricePerUnit) &&     
-                    <label className="flex flex-col flex-1 text-center">
-                        Unidad de Medida
-                        <SelectUnits name="unit" defaultValue={form?.unit || ""}></SelectUnits>
+                    <label className=" label flex flex-col flex-1 text-center">
+                        <span className="label-text">Unidad de Medida</span>
+                         <div className="flex w-full">
+                            <input type='number' defaultValue="1" min="0" className='input max-w-[6ch] shrink-0 
+                                appearance-none
+                                [&::-webkit-inner-spin-button]:appearance-none
+                                [&::-webkit-outer-spin-button]:appearance-none
+                                [-moz-appearance:textfield]'>
+                            </input>
+                            <SelectUnits  defaultValue={form?.unit || ""} setValue={setForm}></SelectUnits>
+
+                        </div>
                     </label>
                 }
             </div>
             {/** Checkboxes*/}
             <div className='flex flex-col'>
                 <div className='flex flex-col justify-center items-center md:flex-row md:justify-around'>
-                    <label  className="flex items-center gap-2 cursor-pointer">
-                        ¿Se vende por Pack?
-                        <input type="checkbox" name="" id=""  onChange={()=>setIsPack(prev=>!prev)} checked={isPack} />
-                    </label>
-                    <label  className="flex items-center gap-2 cursor-pointer">
-                        ¿Requiere unidades de medida?
-                        <input type="checkbox" name="" id="" onChange={()=>setNeedsUnits(prev=>!prev)} checked={needsUnits}/>
-                    </label>
-                    <label  className="flex items-center gap-2 cursor-pointer">
-                        ¿Tiene precio/medida?
-                        <input type="checkbox" name="" id="" onChange={()=>setPricePerUnit(prev=>!prev)} checked={pricePerUnit}  />
-                    </label>
+                    <fieldset className="fieldset bg-base-100 border-base-300 rounded-box w-64 border p-4">
+                        <legend className="fieldset-legend">¿Se vende por Pack?</legend>
+                        <label className="label">
+                            <input type="checkbox"  className="toggle" onChange={()=>setIsPack(prev=>!prev)} checked={isPack}/>
+                            Marca al menos uno
+                        </label>
+                    </fieldset>
+                    <fieldset className="fieldset bg-base-100 border-base-300 rounded-box w-64 border p-4">
+                        <legend className="fieldset-legend">¿Requiere unidades de medida?</legend>
+                        <label className="label">
+                            <input type="checkbox"  className="toggle" onChange={()=>setNeedsUnits(prev=>!prev)} checked={needsUnits}/>
+                            Marca al menos uno
+                        </label>
+                    </fieldset>
+                     <fieldset className="fieldset bg-base-100 border-base-300 rounded-box w-64 border p-4">
+                        <legend className="fieldset-legend">¿Tiene precio/medida?</legend>
+                        <label className="label">
+                            <input type="checkbox"  className="toggle" onChange={()=>setPricePerUnit(prev=>!prev)} checked={pricePerUnit}  />
+                            Marca al menos uno
+                        </label>
+                    </fieldset>
                 </div>
                 <div className='flex flex-col flex-1 gap-2 justify-center mt-4 '>
                     {/* */}
@@ -206,7 +247,7 @@ export const NewItemForm = ({sku}) => {
                     </AnimatePresence>
                 </div>
             </div>
-            <button type='submit' className='btn btn-primary mt-8'>{sku ?"Actualizar Producto":"Ingresar Producto"}</button>
+            <button type='submit' className='btn btn-primary mt-8'>{(sku && !onModal) ?"Actualizar Producto":"Ingresar Producto"}</button>
         </form>
   )
 }

@@ -8,8 +8,8 @@ import rateLimiter from "../../middleware/rateLimiter.js"// 20 en 6 segundos ser
 
 export default function mountMaster(app) {
     app.use("/api/auth", authRoutes );
-    app.use("/api/dashboard",rateLimiter(20,60_000),authMiddleware, dashboardRoutes);
-    app.use("/api/cart",rateLimiter(20,60_000),authMiddleware, cartRoutes);
-    app.use("/api/inventory",rateLimiter(20,60_000),authMiddleware, inventoryRoutes);
+    app.use("/api/dashboard",rateLimiter(100,60_000),authMiddleware, dashboardRoutes);
+    app.use("/api/cart",rateLimiter(100,60_000),authMiddleware, cartRoutes);
+    app.use("/api/inventory",rateLimiter(100,60_000),authMiddleware, inventoryRoutes);
 
 }
