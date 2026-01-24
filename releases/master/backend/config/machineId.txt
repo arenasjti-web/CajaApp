@@ -1,1 +1,0 @@
-Eventualmente cuando corra la aplicacion por primera vez una api rellenara esta variable
