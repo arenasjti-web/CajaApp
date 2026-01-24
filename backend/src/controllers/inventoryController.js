@@ -144,7 +144,7 @@
 
         try {
 
-            const validatedBody = validateItem(req.body)
+            const validatedBody = await validateItem(req.body)
             if(!validatedBody) return res.status(400).json({ message: "Invalid body" })
             const newItem = await Item.create(validatedBody) // opcion de mongoose
             //const newItem = await Item.insertOne(req.body);// driver nativo
@@ -156,7 +156,7 @@
         }
     }
 
-    function validateItem({sku,name,price,stock,lowStockThreshold,brand,provider,...data}){
+    async function validateItem({sku,name,price,stock,lowStockThreshold,brand,provider,...data}){
         const validatedBody = {
             sku,
             name,
@@ -164,7 +164,7 @@
             stock,
             lowStockThreshold,
             brand,
-            provider,
+            provider,  
         }
 
         if( !sku || !name || price === undefined || stock=== undefined){
@@ -186,9 +186,18 @@
         // Campos opcionales que quiza no vengan
         //undefined null "" false
         if(data?.unit) validatedBody.unit=data.unit
-        //console.log("ppu",data?.ppu)
         if(data?.ppu) validatedBody.ppu=data.ppu
-        if(data?.skuPack) validatedBody.skuPack=data.skuPack
+        
+        
+        // Tendré que cambiar el frontend y esto si quiero poder recibir más de un sku, para tener mas de un item asociado a un pack custom
+        if(data?.skuPack && data?.packUnits) {
+            validatedBody.items =[]
+            if (data.packUnits <= 0) throw new Error("packUnits must be greater than 0")
+            const packId = await Item.findOne({sku:data.skuPack},{_id:1})// fin devuelve [] por lo que no da error al hacer !packId
+            if(!packId) throw new error("Invalid SKU for the unit item in this pack")
+            validatedBody.items.push({item:packId._id,qty:data.packUnits})    
+
+        }
 
         return validatedBody
 

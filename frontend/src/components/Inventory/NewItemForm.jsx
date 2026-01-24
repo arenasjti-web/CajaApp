@@ -115,7 +115,6 @@ export const NewItemForm = ({sku,onModal}) => {
             ...(data?.ppu !=null && {ppu:Number(data.ppu)}), // !== null daria true a undefined!== null lo que seria un problema , != es lo correcto aqui
             ...(data.skuPack?.trim() && {skuPack:data.skuPack.trim()}),// trim ya devuelve true si hizo su trabajo por lo que no hace falta mas condicion
             ...(data?.packUnits && {pu:data.packUnits})
-            // ...(data?.pricePack !=null && {pricePack:Number(data.pricePack)}) // cambie de opinion, no lo quiero editable desde aqui.
             
         }
 
@@ -174,44 +173,23 @@ export const NewItemForm = ({sku,onModal}) => {
                     <span className="label-text">Proveedor</span>
                     <SelectProviders defaultValue={form?.provider || ""} setValue={setForm}></SelectProviders>
                 </label>
-                {(needsUnits || pricePerUnit) &&     
-                    <label className=" label flex flex-col flex-1 text-center">
-                        <span className="label-text">Unidad de Medida</span>
-                         <div className="flex w-full">
-                            <input type='number' defaultValue="1" min="0" className='input max-w-[6ch] shrink-0 
-                                appearance-none
-                                [&::-webkit-inner-spin-button]:appearance-none
-                                [&::-webkit-outer-spin-button]:appearance-none
-                                [-moz-appearance:textfield]'>
-                            </input>
-                            <SelectUnits  defaultValue={form?.unit || ""} setValue={setForm}></SelectUnits>
-
-                        </div>
-                    </label>
-                }
+                
             </div>
             {/** Checkboxes*/}
             <div className='flex flex-col'>
-                <div className='flex flex-col justify-center items-center md:flex-row md:justify-around'>
+                <div className='flex flex-col justify-center items-center md:flex-row gap-1'>
                     <fieldset className="fieldset bg-base-100 border-base-300 rounded-box w-64 border p-4">
-                        <legend className="fieldset-legend">¿Se vende por Pack?</legend>
+                        <legend className="fieldset-legend ">¿Es un Pack?</legend>
                         <label className="label">
                             <input type="checkbox"  className="toggle" onChange={()=>setIsPack(prev=>!prev)} checked={isPack}/>
-                            Marca al menos uno
-                        </label>
-                    </fieldset>
-                    <fieldset className="fieldset bg-base-100 border-base-300 rounded-box w-64 border p-4">
-                        <legend className="fieldset-legend">¿Requiere unidades de medida?</legend>
-                        <label className="label">
-                            <input type="checkbox"  className="toggle" onChange={()=>setNeedsUnits(prev=>!prev)} checked={needsUnits}/>
-                            Marca al menos uno
+                            ej: pack cerveza
                         </label>
                     </fieldset>
                      <fieldset className="fieldset bg-base-100 border-base-300 rounded-box w-64 border p-4">
                         <legend className="fieldset-legend">¿Tiene precio/medida?</legend>
                         <label className="label">
                             <input type="checkbox"  className="toggle" onChange={()=>setPricePerUnit(prev=>!prev)} checked={pricePerUnit}  />
-                            Marca al menos uno
+                           ej: se vende por kg
                         </label>
                     </fieldset>
                 </div>
@@ -225,9 +203,14 @@ export const NewItemForm = ({sku,onModal}) => {
                                 exit={{ height: 0, opacity: 0 }}
                                 className="flex flex-1 gap-2"
                             >
-                                <input type='text' name="skuPack" placeholder='Codigo de Barra Pack' className="input input-bordered w-full" required defaultValue={form?.skuPack || ""}></input>
-                                <input type='number' name="packUnits" placeholder="Cuantas unidades por Pack?" className="input input-bordered appearance-none mx-auto" required defaultValue={form?.packUnits || ""}/>
-                                <input type='number' name="packPrice" placeholder="Precio por Pack" className="input input-bordered appearance-none mx-auto " required defaultValue={form?.packPrice || ""}/>
+                                <div className='flex justify-center items-center w-full'>
+                                    <div className='flex w-full mx-10'>
+                                        <input type='text' name="skuPack" placeholder='Codigo de Barra Unidad' className="input input-bordered flex-3" required defaultValue={form?.skuPack || ""}></input>
+                                        <input type='number' name="packUnits" placeholder="unidades?" className="input input-bordered appearance-none flex-1" required defaultValue={form?.packUnits || ""}/>
+
+                                    </div>
+
+                                </div>
                             </motion.div>
                         }
                     </AnimatePresence>
@@ -241,7 +224,12 @@ export const NewItemForm = ({sku,onModal}) => {
                                 exit={{ height: 0, opacity: 0 }}
                                 className="flex flex-1 gap-2 items-center justify-center"
                             >
-                                <input type='number' name="ppu" placeholder='Precio Por Unidad de Medida' className="input input-bordered appearance-none" required defaultValue={form?.ppu || ""}></input>
+                                <div className='flex items-center justify-center w-full'>
+                                    <input type='number' name="ppu" placeholder='Precio Por Unidad de Medida' className="input input-bordered appearance-none " required defaultValue={form?.ppu || ""}></input>
+                                    <div>
+                                        <SelectUnits></SelectUnits>
+                                    </div>
+                                </div>
                             </motion.div>
                         }
                     </AnimatePresence>

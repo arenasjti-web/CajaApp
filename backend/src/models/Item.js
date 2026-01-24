@@ -46,11 +46,20 @@ const itemSchema = new mongoose.Schema(
       type: Number,
       min: 0
     },
-    packItem: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Item",
-      default: null
-    },
+   items: [
+      {
+        item: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Item",
+          required: true
+        },
+        qty: {
+          type: Number,
+          required: true,
+          min: 1
+        }
+      }
+    ],
     // packPrice:{
     //   type: Number,
     //   min: 0
