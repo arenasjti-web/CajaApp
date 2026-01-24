@@ -1,0 +1,31 @@
+# ===== Node =====
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ===== Builds =====
+dist/
+build/
+.release/
+release/
+
+# ===== Frontend (Vite / React) =====
+frontend/dist/
+frontend/.vite/
+
+# ===== Backend =====
+backend/dist/
+
+# ===== Env =====
+.env
+.env.local
+.env.production
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+
+# ===== IDE =====
+.vscode/
+.idea/
