@@ -1,5 +1,4 @@
 import React from 'react'
-
 import { motion, AnimatePresence } from "framer-motion"
 import { SelectUnits } from '../generic/SelectUnits'
 import { SelectProviders } from '../generic/SelectProviders'
@@ -17,11 +16,10 @@ export const NewItemForm = ({sku,onModal}) => {
 
 
     const [isPack,setIsPack] = React.useState(false)
-    const [needsUnits,setNeedsUnits] = React.useState(false)//deberia ser solo una de estas posible a la vez
+    const [pricePerMeasure,setPricePerMeasure] = React.useState(false)
     const [pricePerUnit,setPricePerUnit] = React.useState(false)// no ambas posiblemente
     const inputRef = React.useRef(null)
     const [value, setValue] = React.useState("")
-
     const [skuPack,setSkuPack] = React.useState("")// deberia tener un useEFFECT que busque el precio del pack si es que ya existe en la BD. deberia dar error si es que no existe
     // deberia tener una funcion que confirme que el codigo de barra del producto existe o no
 
@@ -70,6 +68,7 @@ export const NewItemForm = ({sku,onModal}) => {
             const formatedData = formatData(data)
 
             if(onModal){ 
+                // se ingresó item al carrito pero no estaba en la BD
                 const newItem = await api.post("/inventory",formatedData)
                 toast.success("Item created successfully!")
                 console.log("data: ",newItem)
@@ -78,11 +77,13 @@ export const NewItemForm = ({sku,onModal}) => {
             }
 
             if(sku){
+                // se llegó a este componente desde el botón editar. esto es un update
                 const updatedItem = await api.put(`/inventory/${sku}`,formatedData)
                 toast.success("Item updated successfully!")
                 
             }
             else{
+                // ingreso normal de nuevo item
                 const newItem = await api.post("/inventory",formatedData)
                 toast.success("Item created successfully!")
             }
@@ -103,6 +104,12 @@ export const NewItemForm = ({sku,onModal}) => {
     }
 
     const formatData= (data)=>{
+
+        if(!data?.sku || !data?.name || !data?.price || !data?.stock){
+             toast.error("Complete Todos los Campos obligatorios: sku,nombre,precio y stock")
+            throw new Error("Complete Todos los Campos")
+
+        }
         const formatedData = {
             sku:data.sku.trim(),
             name:data.name.trim(),
@@ -111,11 +118,23 @@ export const NewItemForm = ({sku,onModal}) => {
             lowStockThreshold:Number(data.lowStockThreshold),
             brand:data.brand,
             provider:data.provider,
+            category:data.category,
             ...(data?.unit != null && {unit:data.unit}), // Solo agrega el campo si este existe
             ...(data?.ppu !=null && {ppu:Number(data.ppu)}), // !== null daria true a undefined!== null lo que seria un problema , != es lo correcto aqui
+            ...(data?.content !=null && {content:Number(data.content)}),  
+            ...(data?.ppm !=null && {ppm:Number(data.ppm)}),  
             ...(data.skuPack?.trim() && {skuPack:data.skuPack.trim()}),// trim ya devuelve true si hizo su trabajo por lo que no hace falta mas condicion
             ...(data?.packUnits && {pu:data.packUnits})
             
+            
+        }
+
+        if(pricePerMeasure){
+            if(!formatedData?.ppm || !formatedData?.unit) 
+            {
+                toast.error("Complete Todos los Campos si se vende por medida")
+                throw new Error("Complete Todos los Campos")
+            }
         }
 
         return formatedData;
@@ -149,14 +168,15 @@ export const NewItemForm = ({sku,onModal}) => {
                     name='name'
                     className="input input-bordered join-item flex-3"
                     placeholder="Nombre del producto"
-                />
+                    required
+                    />
 
                 <SelectCategories/>
             </div>
             
             <div className='flex flex-1 gap-1'>
                 <input type='number' name="stock"placeholder='Stock' className="input input-bordered appearance-none" required defaultValue={form?.stock || ""}></input>
-                <input type='number' name="price" placeholder='Precio Unidad' defaultValue={form?.price || ""} className="input input-bordered appearance-none
+                <input type='number' name="price" placeholder='Precio' defaultValue={form?.price || ""} className="input input-bordered appearance-none
                     [&::-webkit-inner-spin-button]:appearance-none
                     [&::-webkit-outer-spin-button]:appearance-none
                     [-moz-appearance:textfield]" required>
@@ -178,18 +198,55 @@ export const NewItemForm = ({sku,onModal}) => {
             {/** Checkboxes*/}
             <div className='flex flex-col'>
                 <div className='flex flex-col justify-center items-center md:flex-row gap-1'>
-                    <fieldset className="fieldset bg-base-100 border-base-300 rounded-box w-64 border p-4">
+                    <fieldset  className="
+                        fieldset
+                        border border-base-300
+                        rounded-box
+                        p-4
+                        w-full
+                        min-w-0
+                    ">
                         <legend className="fieldset-legend ">¿Es un Pack?</legend>
                         <label className="label">
                             <input type="checkbox"  className="toggle" onChange={()=>setIsPack(prev=>!prev)} checked={isPack}/>
-                            ej: pack cerveza
+                            { !onModal && "ej: pack cerveza"}
                         </label>
                     </fieldset>
-                     <fieldset className="fieldset bg-base-100 border-base-300 rounded-box w-64 border p-4">
+                     <fieldset  className="
+                        fieldset
+                        border border-base-300
+                        rounded-box
+                        p-4
+                        w-full
+                        min-w-0
+                    ">
                         <legend className="fieldset-legend">¿Tiene precio/medida?</legend>
                         <label className="label">
-                            <input type="checkbox"  className="toggle" onChange={()=>setPricePerUnit(prev=>!prev)} checked={pricePerUnit}  />
-                           ej: se vende por kg
+                            <input type="checkbox"  className="toggle" onChange={()=>{
+                                setPricePerMeasure(prev=>!prev)
+                                setPricePerUnit(false)
+                            }} 
+                            checked={pricePerMeasure}  />
+                           {!onModal && "ej: se vende por kg"}
+                        </label>
+                    </fieldset>
+                      <fieldset  className="
+                            fieldset
+                            border border-base-300
+                            rounded-box
+                            p-4
+                            w-full
+                            min-w-0
+                        ">
+                        <legend className="fieldset-legend">¿se vende por unidad?</legend>
+                        <label className="label">
+                            <input type="checkbox"  className="toggle" onChange={()=>{
+                                    setPricePerUnit(prev=>!prev)
+                                    setPricePerMeasure(false)
+                                }
+                                } 
+                                checked={pricePerUnit}  />
+                           {!onModal && "ej: 1 solo tornillo"}
                         </label>
                     </fieldset>
                 </div>
@@ -213,22 +270,63 @@ export const NewItemForm = ({sku,onModal}) => {
                                 </div>
                             </motion.div>
                         }
-                    </AnimatePresence>
-                    {/* */}
-                    <AnimatePresence>
-                        {pricePerUnit && 
-                        
+                         {(pricePerMeasure) &&
                             <motion.div
                                 initial={{ height: 0, opacity: 0 }}
                                 animate={{ height: "auto", opacity: 1 }}
                                 exit={{ height: 0, opacity: 0 }}
-                                className="flex flex-1 gap-2 items-center justify-center"
                             >
-                                <div className='flex items-center justify-center w-full'>
-                                    <input type='number' name="ppu" placeholder='Precio Por Unidad de Medida' className="input input-bordered appearance-none " required defaultValue={form?.ppu || ""}></input>
-                                    <div>
-                                        <SelectUnits></SelectUnits>
-                                    </div>
+                                <div className='flex flex-col gap-1 items-center justify-center w-full md:flex-row'>
+                                
+
+                                    {pricePerMeasure && (
+                                        <div className='flex justify-center items-center w-full'>
+                                            <input
+                                                type='number'
+                                                name="ppm"
+                                                placeholder='Precio Por Unidad de Medida'
+                                                className="input input-bordered w-full appearance-none
+                                                [&::-webkit-inner-spin-button]:appearance-none
+                                                [&::-webkit-outer-spin-button]:appearance-none
+                                                [-moz-appearance:textfield]"
+                                                required
+                                                defaultValue={form?.ppm || ""}
+                                            />
+                                            <div className='min-w-[8ch]'>
+                                                <SelectUnits setValue={setForm}/>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                </div>
+                            </motion.div>
+                        }
+
+                        {pricePerUnit &&
+                            <motion.div>
+                                <div className='flex justify-center items-center w-full'>
+                                    <input
+                                        type='number'
+                                        name="ppu"
+                                        className='input w-full appearance-none
+                                        [&::-webkit-inner-spin-button]:appearance-none
+                                        [&::-webkit-outer-spin-button]:appearance-none
+                                        [-moz-appearance:textfield]'
+                                        placeholder='Precio por unidad'
+                                        defaultValue={form?.ppu || ""}
+                                    />
+                                    <input
+                                        type='number'
+                                        name="content"
+                                        className='input w-full appearance-none
+                                        [&::-webkit-inner-spin-button]:appearance-none
+                                        [&::-webkit-outer-spin-button]:appearance-none
+                                        [-moz-appearance:textfield]'
+                                        placeholder='Cuantas Unidades Trae'
+                                        defaultValue={0}
+                                    >
+                                    
+                                    </input>
                                 </div>
                             </motion.div>
                         }

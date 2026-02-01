@@ -2,24 +2,83 @@ import React from 'react'
 import { Trash2 ,Copy} from 'lucide-react'
 import api from '../../lib/axios'
 
-export const CartItem = ({data,saleId,onDelete,onQuantityChange}) => {
+export const CartItem = ({data,saleId,onDelete,onQuantityChange,setItems}) => {
 
     //const [quantity,setQuantity] = React.useState(data.quantity)
-    const[priceToggle,setPriceToggle] = React.useState("$$")
-
-    const handleQuantity = async (delta)=>{
+    const[priceToggle,setPriceToggle] = React.useState("regular")
+    const [quantityInput,setQuantityInput] = React.useState("1")
+    
+    const handleQuantity = async (delta,newQuantity)=>{
        
         try {
-            // algo que cambia en BD la cantidad
-            const res = api.put(`/cart/sales/${saleId}/items/${data.itemId}`,{delta:delta})
-            onQuantityChange(data.sku,delta)
+            // si delta vino de los botones. se cambiara 1 o -1 a la cantidad. si es otro valor entonces quiero reemplazar de golpe ese valor
+            const body={}
+            if(delta!=null) body.delta = delta
+            
+            if(newQuantity!=null)body.newQuantity = newQuantity
+            
+            
+            const res = api.put(`/cart/sales/${saleId}/items/${data.itemId}`,body)
+            onQuantityChange(data.sku,body.delta,body.newQuantity)
         } catch (error) {
             console.log("error cambiado cantidad de item",error)
         }
     }
+    React.useEffect(() => {
+      setQuantityInput(String(data.quantity));
+    }, [data.quantity]);
+
+    const handleInputChange = (e) => {
+    const value = e.target.value;
+
+    if (priceToggle === "ppm") {
+        // acepta números decimales y estados intermedios
+        if (/^\d*\.?\d*$/.test(value)) {
+        setQuantityInput(value);
+        }
+    } else {
+        // solo enteros
+        if (/^\d*$/.test(value)) {
+        setQuantityInput(value);
+        }
+    }
+    };
+
+    const commitQuantity = () => {
+    if (quantityInput === "") {
+        setQuantityInput(String(data.quantity));
+        return;
+    }
+
+    const value = Number(quantityInput);
+
+    if (!Number.isFinite(value)) {
+        setQuantityInput(String(data.quantity));
+        return;
+    }
+
+    // acá recién decides si aceptas 0 o no
+    handleQuantity(null,value);
+    };
+
 
     const deleteRow = ()=>{
         onDelete(data.sku)
+    }
+
+    const handleToggleChange = (pricingMode)=>{
+        setPriceToggle(pricingMode)
+        setItems(prev =>
+            prev.map(item =>
+                item.id === data.id
+                ? {
+                    ...item,
+                    pricingMode: pricingMode,
+                    priceAtSale: item.prices[pricingMode]// aqui
+                    }
+                : item
+            )
+        )
     }
 
   return (
@@ -71,27 +130,50 @@ export const CartItem = ({data,saleId,onDelete,onQuantityChange}) => {
             md:space-y-0
             md:space-x-2
         ">
-
-            {/* Opción Precio por Unidad */}
+           
+            {/* Opción Precio Base ( tipicamente por paquete/unidad ) */}
             <label className="tooltip cursor-pointer" data-tip="Precio por Unidad">
                 <input
                     type="radio"
                     name="options"
                     value="$$"
                     aria-label="$$"
-                    onChange={(e) => setPriceToggle(e.target.value)}
-                    defaultChecked
+                    onChange={(e) => handleToggleChange("regular")}
                     className="hidden"
+                    checked={priceToggle === "regular"}
+
                 />
                 <div  className={`px-3 py-1 rounded-full border border-gray-300 text-sm font-medium text-center shadow-sm
                                 transition-colors duration-200
-                                ${priceToggle === '$$' ? 'bg-green-700/80 text-white' : 'bg-white text-gray-800'}
+                                ${priceToggle === 'regular' ? 'bg-green-700/80 text-white' : 'bg-white text-gray-800'}
                                 hover:bg-green-50`}
                 >
                     $$
                 </div>
             </label>
+             {/** Opción Precio por Unidad en caso de venderse suelto*/}
+            <label className="tooltip cursor-pointer" data-tip="Precio por Medida">
+                <input
+                type="radio"
+                name="options"
+                value="kg"
+                aria-label="kg"
+                onChange={(e) => handleToggleChange("ppu")}
+                disabled={!data.prices?.ppu}
+                className="hidden"
+                checked={priceToggle === "ppu"}
 
+                />
+                <div
+                className={`px-3 py-1 rounded-full border border-gray-300 text-sm font-medium text-center shadow-sm
+                            transition-colors duration-200
+                            ${priceToggle === 'ppu' ? 'bg-green-600 text-white' : 'bg-white text-gray-800'}
+                            hover:bg-green-50
+                            ${!data.prices?.ppu ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                C/U
+                </div>
+            </label>       
             {/* Opción Precio por Medida */}
             <label className="tooltip cursor-pointer" data-tip="Precio por Medida">
                 <input
@@ -99,16 +181,18 @@ export const CartItem = ({data,saleId,onDelete,onQuantityChange}) => {
                 name="options"
                 value="kg"
                 aria-label="kg"
-                onChange={(e) => setPriceToggle(e.target.value)}
-                disabled={data?.ppu}
+                onChange={(e) => handleToggleChange("ppm")}
+                disabled={!data.prices?.ppm}
                 className="hidden"
+                checked={priceToggle === "ppm"}
+
                 />
                 <div
                 className={`px-3 py-1 rounded-full border border-gray-300 text-sm font-medium text-center shadow-sm
                             transition-colors duration-200
-                            ${priceToggle === 'kg' ? 'bg-green-600 text-white' : 'bg-white text-gray-800'}
+                            ${priceToggle === 'ppm' ? 'bg-green-600 text-white' : 'bg-white text-gray-800'}
                             hover:bg-green-50
-                            ${data?.ppu ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            ${!data.prices?.ppm ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                 kg
                 </div>
@@ -120,18 +204,38 @@ export const CartItem = ({data,saleId,onDelete,onQuantityChange}) => {
             <div className="flex items-center rounded-lg px-2">
                 <button
                     className="px-2 py-1 text-gray-500 hover:bg-base-200 rounded-full disabled:opacity-30"
-                    onClick={()=>handleQuantity(-1)}
+                    onClick={()=>handleQuantity(-1,null)}
                 >
                     −
                 </button>
 
-                <span className="min-w-[1.5rem] text-center text-sm font-semibold">
-                    {data.quantity}
-                </span>
+               <input
+                    type="number"
+                    step="any"
+                    value={quantityInput}
+                    onChange={handleInputChange}
+                    onBlur={() => commitQuantity()}
+                    min={0}
+                    className="
+                        w-10
+                        text-center
+                        bg-transparent
+                        border-none
+                        outline-none
+                        text-sm
+                        font-semibold
+                        tabular-nums
+                        appearance-none
+                        [-moz-appearance:textfield]
+                        [&::-webkit-outer-spin-button]:appearance-none
+                        [&::-webkit-inner-spin-button]:appearance-none
+                    "
+                />
+
 
                 <button
                     className="px-2 py-1 text-gray-500 hover:bg-base-200 rounded-full disabled:opacity-30"
-                    onClick={()=>handleQuantity(1)}
+                    onClick={()=>handleQuantity(1,null)}
                 >
                     +
                 </button>
@@ -155,7 +259,7 @@ export const CartItem = ({data,saleId,onDelete,onQuantityChange}) => {
             text-sm
             md:text-base
             ">
-            {data.priceAtSale}
+            {`$${data.priceAtSale * data.quantity}`}
         </div>
 
 

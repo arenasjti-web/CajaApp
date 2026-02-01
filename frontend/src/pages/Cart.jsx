@@ -34,6 +34,7 @@ export const Cart = () => {
             console.log("error creando/carando el carrito",error)
         }
     }
+
     React.useEffect( ()=>{
         createSale()
     },[])
@@ -42,7 +43,7 @@ export const Cart = () => {
 
     const processSale = async(status)=>{
         try {
-            const res = await api.put(`/cart/sales/${saleId}`,{status,total})
+            const res = await api.put(`/cart/sales/${saleId}`,{status,total,items})
             if(res.status===200){
                 status==="paid"?toast.success("Venta Procesada"):toast.success("Venta Cancelada")
                 // 
@@ -71,11 +72,11 @@ export const Cart = () => {
     },[items])
 
  
-    function changeQuantity(sku,delta){
+    function changeQuantity(sku,delta,newQuantity){
         
          setItems( (prev)=> prev.map(item =>
                 item.sku === sku
-                ? { ...item,  quantity: Math.max(0, item.quantity + delta) }
+                ? { ...item,  quantity: Math.max(0, (delta!=null)?item.quantity + delta : newQuantity) }
                 : item
             )
         )

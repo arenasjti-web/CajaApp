@@ -4,6 +4,7 @@ export const CartSummary = ({total,processSale}) => {
 
   const [showCancelModal, setShowCancelModal] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
+  const [change,setChange] = React.useState(0)
 
   async function handleSaleProcess(status){
 
@@ -27,6 +28,10 @@ export const CartSummary = ({total,processSale}) => {
       setLoading(false)
     }
   }
+
+  React.useState(()=>{
+
+  },[total])
 
   const minDelay = (ms) =>
     new Promise(resolve => setTimeout(resolve, ms))
@@ -79,9 +84,24 @@ export const CartSummary = ({total,processSale}) => {
             Resumen de Venta
           </h2>
 
-          <div className="flex flex-col justify-between items-center  lg:flex-row w-full">
-            <span>Total de Venta:</span>
-            <span className="font-bold text-green-600">{`$ ${total}`}</span>
+          <div className="flex items-center justify-between rounded-lg bg-green-50 px-4 py-3 border border-green-200">
+            <span className="text-sm font-medium text-gray-700">
+                Total de venta
+            </span>
+            <span className="text-xl font-bold text-green-700">
+                $ {total}
+            </span>
+        </div>
+          <div className='flex flex-col items-center'>
+              <input type='number'  className="input text-center bg-transparent
+                appearance-none
+                [&::-webkit-inner-spin-button]:appearance-none
+                [&::-webkit-outer-spin-button]:appearance-none
+                [-moz-appearance:textfield]" 
+              
+              placeholder='Se paga con:' onChange={(e)=>setChange(e.target.value - total)}>
+              </input>
+              <span className="font-bold text-green-600">{`Vuelto : $${Math.max(change,0)}`}</span>
           </div>
 
           <div className="flex flex-col lg:flex-row gap-0.5 w-full">

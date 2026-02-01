@@ -20,6 +20,9 @@ export function useScannerListener() {
       }
       if (e.key === "NumLock") return// cosa que el scanner coloca al inicio y final porque está mal configurado y perdí la hoja
 
+      // Ignorar teclas especiales. "shift" lo toma como toda la palabra, asi que si filtro por mas de 1 caracter basta
+      if (e.key.length !== 1) return;
+
       // Acumula la tecla
       buffer += e.key;
 

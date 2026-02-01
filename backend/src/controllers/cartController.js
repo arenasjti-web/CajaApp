@@ -46,7 +46,7 @@ export const addItemToCart = async(req,res)=>{
         const item = await Item.findOne({sku})
 
         if(item){
-            console.log("ENTRÓ AL CONTROLLER")
+            
             const alreadyIn = await Sale.findOne({_id: saleId,"items.itemId":item._id})
 
             if(alreadyIn){
@@ -59,6 +59,12 @@ export const addItemToCart = async(req,res)=>{
                     itemId: item._id,
                     sku:sku,
                     nameSnapshot: item.name,
+                    prices:{
+                        regular: item.price,
+                        ppu: item.ppu ?? null,
+                        ppm: item.ppm ?? null
+                    },
+                    pricingMode:"regular",
                     priceAtSale: item.price,
                     quantity: 1
                 }
@@ -90,9 +96,9 @@ export const addItemToCart = async(req,res)=>{
 export const updateItemQuantity = async(req,res)=>{
 
     const {saleId,itemId} = req.params;
-    const {delta} = req.body;
+    const {delta,newQuantity} = req.body;
     try{
-        await updatedQuantityHelper(saleId,itemId,delta)
+        await updatedQuantityHelper(saleId,itemId,delta,newQuantity)
         res.status(200).json({message:"Cantidad actualizada"})
     }catch(error){
         console.error("Error updating quantity",error)
@@ -100,20 +106,31 @@ export const updateItemQuantity = async(req,res)=>{
     }
 }
 
-async function updatedQuantityHelper(saleId,itemId,delta){
-     if( delta > 0){
-            const updatedItem = await Sale.updateOne(
-                { _id: saleId, "items.itemId": itemId },
-                { $inc: { "items.$.quantity": delta } }
-            )// usar $set acaba trayendo un valor viendo del state y no se actualiza bien si cambia la cantidad repetidas veces
-            
-        }
-        else{// al restar solo permitir que se haga la request en caso de que cantidad>0
-             const updatedItem = await Sale.updateOne(
-                { _id: saleId, "items.itemId": itemId,"items.quantity": { $gt: 0 } },
-                { $inc: { "items.$.quantity": delta } }
-            )
-        }
+async function updatedQuantityHelper(saleId,itemId,delta,newQuantity){
+    if(delta!=null){
+        // se cambio la cantidad con botones
+        if( delta > 0){
+               const updatedItem = await Sale.updateOne(
+                   { _id: saleId, "items.itemId": itemId },
+                   { $inc: { "items.$.quantity": delta } }
+               )// usar $set acaba trayendo un valor viendo del state y no se actualiza bien si cambia la cantidad repetidas veces
+               
+           }
+           else{// al restar solo permitir que se haga la request en caso de que cantidad>0
+                const updatedItem = await Sale.updateOne(
+                   { _id: saleId, "items.itemId": itemId,"items.quantity": { $gt: 0 } },
+                   { $inc: { "items.$.quantity": delta } }
+               )
+           }
+
+    }
+    else if(newQuantity!=null){
+        // se metió un valor nuevo 
+        const updatedItem = await Sale.updateOne(
+            { _id: saleId, "items.itemId": itemId },
+             { $set: { "items.$.quantity": newQuantity } }
+        )
+    }
 }
 
 export const deleteCartRow = async(req,res)=>{
@@ -188,9 +205,10 @@ export const processSale = async (req, res)=>{
     // call this if the state is " cancelled" or "paid". i should deleted from the local variables/ states in the front end as soon as i received the 200 state
    try{
         const {saleId} = req.params
-        const {status,total} = req.body
+        const {status,total,items} = req.body
 
         const allowedStatus = ["completed", "cancelled", "paid"]
+        //console.log(items)
 
         if (!allowedStatus.includes(status)) {
             return res.status(400).json({
@@ -200,7 +218,7 @@ export const processSale = async (req, res)=>{
 
         const sale = await Sale.findByIdAndUpdate(
             saleId,
-            { status,totalAmount:total },
+            { status,totalAmount:total,items},
             { new: true }
         )
 
@@ -209,7 +227,9 @@ export const processSale = async (req, res)=>{
                 message: "Sale not found"
             })
         }
-    
+
+        await processSaleItems(items);//AQUI
+
         res.status(200).json({message:"Venta Procesada"})
 
    }catch(error){
@@ -217,6 +237,48 @@ export const processSale = async (req, res)=>{
         res.status(500).json({message:"Internal server error"})
    }
 }
+
+const processSaleItems= async(saleItems)=>{
+    // revisa los items uno por uno y corrige stock
+
+    for(const saleItem of saleItems){
+        // hacer cosas
+        const item = await Item.findOne({_id:saleItem.itemId})
+        if(!item)
+        {
+            console.log("mal id ? ")// ver si llega como string y no objectID
+            continue
+        }
+
+        let delta = 1
+        if(saleItem.pricingMode === "regular") delta = item?.content ? item.content * saleItem.quantity :1
+        if(saleItem.pricingMode === "ppm" || saleItem.pricingMode === "ppu") delta = saleItem.quantity 
+        // si es ppm o ppu deberia restarse solo la cantidad que el usuario ingresó. es cuando es regular que necesito saber cuanto contenido tenia la <caja> para saber cuanto descontar del inventario
+       
+       
+        
+
+        await Item.findByIdAndUpdate(
+        item._id,
+        [
+            {
+            $set: {
+                stock: {
+                $max: [
+                    0,
+                    { $subtract: ["$stock", delta] }
+                ]
+                }
+            }
+            }
+        ],
+        { updatePipeline: true }
+        )
+
+    }
+}
+
+
 
  async function formatItems(items){
     

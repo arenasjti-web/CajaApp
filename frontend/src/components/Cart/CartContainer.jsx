@@ -11,7 +11,7 @@ export const CartContainer = ({items,setItems,saleId,deleteItem,onQuantityChange
     
     const [newSku,setNewSku] = React.useState("");// la idea seria un useEffect donde al scanear se cambie este estado y se vaya a buscar los datos del objeto y se agrege a items
     const { scan } = useScanner()
-    const [missingSku,setMissingSku] = React.useState("")
+    const [missingSku,setMissingSku] = React.useState(null)
     const [showModalMissingSku,setShowModalMissingSku] = React.useState(false)
 
     React.useEffect(() => {
@@ -27,7 +27,7 @@ export const CartContainer = ({items,setItems,saleId,deleteItem,onQuantityChange
 
     const addItem = async (sku) => {
         try {
-            if (!sku) return
+            if (!sku || !saleId) return
 
             const result = await api.post(`/cart/sales/${saleId}/items/${sku}`)
             
@@ -75,8 +75,8 @@ export const CartContainer = ({items,setItems,saleId,deleteItem,onQuantityChange
     }
 
     const onCancelModal = ()=>{
-        setMissingSku("")
-        setShowModalMissingSku(false    )
+        setMissingSku(null)
+        setShowModalMissingSku(false)
     }    
 
     
@@ -101,7 +101,7 @@ export const CartContainer = ({items,setItems,saleId,deleteItem,onQuantityChange
                         : "bg-base-100 rounded-xl shadow-sm m-2 "
                     }
                 >
-                    <CartItem data={item} saleId={saleId} onDelete={deleteItem} onQuantityChange={onQuantityChange} />
+                    <CartItem data={item} saleId={saleId} onDelete={deleteItem} onQuantityChange={onQuantityChange} setItems={setItems} />
                 </div>
                 ))
             )}

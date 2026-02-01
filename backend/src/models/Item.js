@@ -42,7 +42,15 @@ const itemSchema = new mongoose.Schema(
       type:String,
       trim:true
     },
-    ppu:{// Precio Por Unidad ( de medida )
+    content:{
+      type:Number,
+      min:0
+    },
+    ppu:{// Precio Por Unidad 
+      type: Number,
+      min: 0
+    },
+    ppm:{ // precio por medida
       type: Number,
       min: 0
     },

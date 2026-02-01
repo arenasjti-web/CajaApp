@@ -30,13 +30,18 @@ export const SelectCategories = () => {
                 }}
             >
             <option value="">Categoría</option>
-            <option>Bebidas</option>
-            <option>Alcohol</option>
-            <option>Dulces</option>
-            <option>Ferretería</option>
-            <option>Charcutería</option>
-            <option>Higiene</option>
-            <option>Otros</option>
+            <option value="Bebidas">Bebidas</option>
+            <option  value="Alcohol">Alcohol</option>
+            <option value="Dulces">Dulces</option>
+            <option value="Helados">Helados</option>
+            <option value="Congelados">Congelados</option>
+            <option value="Lácteos">Lácteos</option>
+            <option value="Ferretería">Ferretería</option>
+            <option value="Charcutería">Charcutería</option>
+            <option value="Cigarros">Cigarros</option>
+            <option value="No Perecibles">No Perecibles</option>
+            <option value="Higiene y Limpieza">Higiene</option>
+            <option value="Otros">Otros</option>
         </select>
 
         <ChevronDown

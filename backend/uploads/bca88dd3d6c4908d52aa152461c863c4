@@ -1,0 +1,3 @@
+sku,name,price,stock,lowStockThreshold,brand(Marca),provider(Proveedor),unit(Unidad en caso que se venda por esta),ppu(Precio Por unidad),items(En caso de que sea pack)
+7802955010034,producto test,2000,1,1,,,,,
+7809558102661,producto test 2,1000,1,1,,,,,

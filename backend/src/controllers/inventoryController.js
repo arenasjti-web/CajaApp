@@ -1,7 +1,11 @@
-   import Item from "../models/Item.js";
-   import Brand from "../models/Brand.js"
-   import Provider from "../models/Provider.js"
-   import mongoose from "mongoose";
+    import Item from "../models/Item.js";
+    import Brand from "../models/Brand.js"
+    import Provider from "../models/Provider.js"
+    import mongoose from "mongoose";
+    import csv from "csv-parser";
+    import fs from "fs";
+    import { randomUUID } from "crypto";
+   
 
     export const getInventory = async (req,res)=>{
         
@@ -110,7 +114,6 @@
             
             switch (stock) {
                 case "En Stock":
-                    console.log("1")
                     filter.stock = { $gt: 0 }
                 break
 
@@ -164,7 +167,8 @@
             stock,
             lowStockThreshold,
             brand,
-            provider,  
+            provider,
+            
         }
 
         if( !sku || !name || price === undefined || stock=== undefined){
@@ -178,15 +182,34 @@
         // esto deberia quitar el campo si es que dejaron marcada la opcion por defecto del select( value="")
         // esto no deberia interrumpir el proceso. Podria haber un objeto sin proveedor
         
-        if (validatedBody.provider === "") {
-            delete validatedBody.provider
-        }
+        if(validatedBody.provider === "") delete validatedBody.provider
+        if(validatedBody.category === "") delete validatedBody.category
         
         
         // Campos opcionales que quiza no vengan
         //undefined null "" false
-        if(data?.unit) validatedBody.unit=data.unit
-        if(data?.ppu) validatedBody.ppu=data.ppu
+        validatedBody.category = (data?.category) ? data.category : "Otros"
+        if((!data?.ppu && data?.ppm) || (data?.ppu && !data?.ppm)){
+            // solo una de las 2 a la vez
+            if(data?.ppu && data?.content) 
+            {
+                const inferedContent = inferredContent(validatedBody.name,"(und|unds|pcs)")
+                validatedBody.ppu=data.ppu
+                validatedBody.content = inferedContent
+                validatedBody.stock *= inferedContent
+                validatedBody.lowStockThreshold *= inferedContent
+            }
+            if(data?.ppm && data?.unit) 
+            {
+                validatedBody.ppm = data.ppm
+                validatedBody.unit = data.unit  
+                const inferedContent = inferredContent(validatedBody.name,data.unit)
+                validatedBody.content  = inferedContent
+                validatedBody.stock *= inferedContent 
+                validatedBody.lowStockThreshold *= inferedContent
+                // si venia con unidad de medida entonces transformamos el stock en n*content ( ej: 5 x 20kg => stock: 100). con esto si vendo por paquete resto el peso del paquete y si vendo por peso resto el peso vendido
+            }
+        }
         
         
         // Tendré que cambiar el frontend y esto si quiero poder recibir más de un sku, para tener mas de un item asociado a un pack custom
@@ -204,9 +227,251 @@
         
     }
     
-    export const addManyToInventory = async(req,res)=>{
+    function inferredContent(name,unit) {
+        if(!name || !unit) return null
+
+        const isRegexUnit = unit.startsWith('(') && unit.endsWith(')')// si mando un string como (kg|g) esto lo permite
+
+        const safeUnit = isRegexUnit
+        ? unit
+        : unit.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        // permitidmos cosas como m^2 porsiaacaso
+
+        const regex = new RegExp(
+            `(\\d+(?:[.,]\\d+)?)\\s*${safeUnit}\\b`,// numero seguido de , opcionalmente; decimales con punto o coma y posibles espacios en blanco más la unidad de medida que viene del form
+            'i'
+        )
+
+        const match = name.match(regex)
+        if (!match) return null
+
+        return parseFloat(match[1].replace(',', '.'))// dejamos con . decimal si o si 
+    }   
+
+    export const importCsv = async(req,res)=>{
         // from CSV?. make it later as an extra feature
+       if (!req.file) return res.status(400).send("No se recibió archivo");
+        const REQUIRED_HEADERS = ["sku", "name", "price","stock"];// si el csv proporcionado no tiene estos al menos entonces no se puede seguir
+        const importId = randomUUID();
+        console.log(importId)// para luego borrar manualmente durante etapa de pruebas
+
+
+        const resultados = [];
+        let hasBrand = false;
+        let hasProvider = false;
+    
+        fs.createReadStream(req.file.path)
+        .pipe(csv())// csv() es lo unico propio de csv-parser en este codigo
+        .on("headers", (headers) => {
+            if (headers.every(h => !h || h.trim() === "")) {
+                throw new Error("CSV sin headers válidos");// esto evita un pair value que luzca asi {"":Value} al toparse nada en la primera fila
+            }
+            const normalized = headers.map(h =>
+                h
+                .replace(/\s*\(.*?\)\s*/g, "") // elimina cualquier "(...)" y los espacios alrededor
+                .trim()
+                .toLowerCase()
+        );
+
+    
+            // veo que no falte ninguno de los headers obligatorios, si falta queda en missing y se notifica cual falta
+            const missing = REQUIRED_HEADERS.filter(
+                 h => !normalized.includes(h)
+            );
+    
+            if (missing.length > 0) {
+                throw new Error(
+                    `CSV inválido. Faltan columnas: ${missing.join(", ")}`
+                );
+            }
+    
+        })
+        .on("data", (row) => {
+            resultados.push(row);
+        })
+        .on("end", async() => {
+            console.log(resultados);
+            try{
+                //
+               const { insertedCount,errors } = await insertItems(resultados)
+    
+               if(insertedCount===0) return res.status(400).json({errors})
+    
+                res.status(200).json({insertedCount,errors})
+            }catch(error){
+                console.log(error)
+            }
+            finally{
+                fs.unlinkSync(req.file.path);
+            }
+        });
+    
+    
+
+        
     }
+
+async function insertItems(resultados){
+    if(resultados.length=== 0) throw new Error("Sin Items")
+    const importId = randomUUID();
+    let errors=[]
+    let itemsToInsert = []
+    
+    for (const [index, row] of resultados.entries()) {// antes era un foreach pero esto nunca espera promesas y no servia el await. la otra opción era un await Promise.all() encapsulando todo
+        row.importId = importId;
+        try {
+            // provider y brand son ref a objectId de su propio modelo. necesito buscar ese Id y remplazar el string antes de insertar a item
+            if (row.provider?.trim()) {// evito " "  que es truthy
+                await checkForProvider(row)
+            
+            }
+            if(row.brand?.trim()){
+                await checkForBrand(row)
+            }
+            if(row.items){
+                // esto es el o los objetos a los que referencia un pack. el modelo espera objectId pero es razonable que aqui el usuario ingrese SKUs por lo que hay que buscarlos
+                await validatePacks(row)
+            }
+
+            await validateRequieredFields(row)
+
+            // asumiendo que no hay errores que haya olvidado checkear:
+            itemsToInsert.push(row)
+        } catch (error) {
+            errors.push({
+                row: index+1,
+                error,
+                data:row
+            })
+        }finally{
+            console.log("errors:",errors)
+        }
+    }
+
+    try {
+        var insertedCount = 0;
+
+        const result = await Item.insertMany(itemsToInsert, { ordered: false });// sin el ordered :false algún constraint como duplicados/unique da error y rompe el flujo
+        
+        insertedCount = result.length;
+       
+
+        
+    }catch (error) {
+        if (error.code === 11000) {
+            // duplicados ignorables
+            console.warn("Algunos documentos ya existían y no se insertaron");
+        } else {
+            // error real
+            console.log(error)
+            throw err;
+        }
+    }
+
+    return { insertedCount, errors };
+
+}
+
+async function checkForBrand(row) {
+    const value = row.brand?.toString().trim()
+
+    // 1️⃣ Si ya es un ObjectId válido → solo verifico que exista
+    if (mongoose.Types.ObjectId.isValid(value)) {
+        const exists = await Brand.exists({ _id: value })
+        if (!exists) throw new Error("brand no existe en la BD")
+        row.brand = value
+        return
+    }
+
+    // 2️⃣ Si NO es ObjectId → lo trato como nombre
+    const brand = await Brand.findOne({ name: value })
+    if (!brand) throw new Error("marca no existe en la BD")
+    row.brand = brand._id
+}
+
+async function checkForProvider(row){
+    
+    const value = row.provider?.toString().trim()
+
+    // 1️⃣ Si ya es un ObjectId válido → solo verifico que exista
+    if (mongoose.Types.ObjectId.isValid(value)) {
+        const exists = await Provider.exists({ _id: value })
+        if (!exists) throw new Error("provider no existe en la BD")
+        row.provider = value
+        return
+    }
+
+    // 2️⃣ Si NO es ObjectId → lo trato como nombre
+    const provider = await Provider.findOne({ name: value })
+    if (!provider) throw new Error("provider no existe en la BD")
+    row.provider = provider._id
+}
+
+async function validatePacks(row){
+    const formatedItems = []
+    const items = parseItems(row.items)// devuelve arreglo con pares de valores ( sku: " ", qty: number)
+
+    for( const {sku,qty} of items){
+        const foundItem = await Item.findOne({sku})
+        if(!foundItem) throw new Error(`SKU: <<${sku} >>no corresponde a un objeto en la BD por lo que pack <<${row.sku}>> no pudo agregarse`)
+        formatedItems.push({item:foundItem._id,qty})
+    }
+
+    row.items = formatedItems
+}
+
+function parseItems(itemsRaw) {
+    if (!itemsRaw?.trim()) return [];
+
+    // items viene en formato : "sku1:qty1,sku2:qty2"
+    return itemsRaw.split(",").map(pair => {
+        const [sku, qty] = pair.split(":");
+
+        if (!sku || !qty) {
+            throw new Error(`Formato inválido en items: "${pair}"`);
+        }
+
+        const quantity = Number(qty);
+
+        if (!Number.isInteger(quantity) || quantity <= 0) {
+            throw new Error(`Cantidad inválida para SKU ${sku}`);
+        }
+
+        return {
+            sku: sku.trim(),
+            qty: quantity
+        };
+    });
+}
+
+async function validateRequieredFields(row){
+
+    // si el csv traia un blank en el campo sku trato de crear uno único. 10 intentos máximo
+    if(!row?.sku?.trim()){
+       
+        //falta el sku, genero uno aleatorio
+        const max_tries = 10;
+        let uniqueSku =false;
+        let sku;
+        for(let i = 0; i<max_tries;i++){
+            sku = generateInternalCode()
+            const exists = await Item.exists({sku})// al parecer exists es mas rapido que findOne
+            if(!exists) {
+                uniqueSku= true
+                row.sku = sku
+                break
+            }
+            
+        }
+        if(!uniqueSku) throw new Error("No se pudo crear codigo de barra único") 
+
+    }
+    if(!row.name?.trim() || !row?.price || !row?.stock ) throw new Error("Faltan campos obligatorios")
+
+    if(row.price<0 || row.stock<0 || row.lowStockThreshold <0) throw new Error("No puede haber valores menores a 0")
+    
+
+}
 
     export const updateItem = async(req,res)=>{
 
@@ -407,3 +672,9 @@
         // ])
 
     }
+
+function generateInternalCode() {
+    const prefix = "MANE"; // jamás usado por productos reales
+    const random = Math.random().toString(36).substring(2, 10).toUpperCase();// toStrin(36) => base 36 => 0–9 + a–z
+    return `${prefix}-${random}`;
+}

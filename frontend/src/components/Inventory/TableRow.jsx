@@ -11,7 +11,7 @@ export const TableRow = ({row,rowStyle,onDelete, handleDeleteClick}) => {
         <td>{row.sku}</td>
         <td>{row.name}</td>
         <td>{row.price}</td>
-        <td>{row.stock}</td>
+        <td>{`${row.stock} ${(row?.unit)?row.unit:""}`}</td>
         <td>{<Dropdown sku={row.sku} onDelete={handleDeleteClick}></Dropdown>}</td>
     </tr>
    
